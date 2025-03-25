@@ -1,0 +1,36 @@
+{
+"iou_threshold": 0.45,
+"detection_threshold": 0.25,
+"output_activation": "none",
+"label_offset":1,
+"max_boxes":200,
+"anchors": [
+ [ 116, 90, 156, 198, 373, 326 ],
+ [ 30, 61, 62, 45, 59, 119 ],
+ [ 10, 13, 16, 30, 33, 23 ]
+],
+"labels": [
+ " ",
+ "Access Panel",
+ "Bolt",
+ "Cover Bolt",
+ "Filter Mount Bolt",
+ "Lower Bracket",
+ "Manifold Bolt",
+ "Mid Bracket",
+ "Missing Access Panel",
+ "Missing Bolt",
+ "Missing Cover Bolt",
+ "Missing Filter Mount Bolt",
+ "Missing Lower Bracket",
+ "Missing Mid Bracket",
+ "Missing Manifold Bolt",
+ "Missing Power Pack",
+ "Missing Rail Cover",
+ "Missing Upper Bracket",
+ "Missing Bracket", 
+ "Power Pack",
+ "Rail Cover",
+ "Upper Bracket"
+]
+}
