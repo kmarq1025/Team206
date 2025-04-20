@@ -38,9 +38,11 @@ class RaspberryPiCameraApp:
         self.detection_running = [False]
         self.recording = [False]
         self.detection_process = None
+        self.recording_process = None
+        self.selected_detection = ""
         self.selected_model = ""
         self.selected_labels = ""
-        self.selected_input = ""
+        self.selected_input = "rpi"
         self.camera = None
         self.frame_thread = None
         self.running = False
@@ -64,6 +66,9 @@ class RaspberryPiCameraApp:
         self.control_panel = tk.Frame(self.main_frame, bg="#f0f0f0", width=400)
         self.control_panel.pack(side=tk.RIGHT, fill=tk.Y)
         self.control_panel.pack_propagate(False)  # Prevent shrinking
+        
+        # Scan available detection type files
+        self.scan_detection_files()
         
         # Scan available model files
         self.scan_model_files()
@@ -91,6 +96,24 @@ class RaspberryPiCameraApp:
         self.root.bind("<r>", lambda e: self.toggle_recording())
         self.root.bind("<c>", lambda e: self.capture_still())
     
+    def scan_detection_files(self):
+        """Scan for available detection type files"""
+        self.detection_files = []
+        
+        # Get all .py files in basic_pipelines/detections directory
+        py_files = glob.glob("./basic_pipelines/detections/*.py")
+        
+        for file_path in py_files:
+            filename = os.path.basename(file_path)
+            self.detection_files.append((filename, file_path))
+        
+        # If no detection types found, add a placeholder
+        if not self.detection_files:
+            self.detection_files = [("No detection types found", "")]
+        else:
+            # Set default to first detection type
+            self.selected_detection = self.detection_files[0][1]
+            
     def scan_model_files(self):
         """Scan for available model files"""
         self.model_files = []
@@ -129,7 +152,7 @@ class RaspberryPiCameraApp:
             
     def scan_input_files(self):
         """Scan for available input files"""
-        self.input_files = []
+        self.input_files = [("Camera", "rpi")] #---------------------------
         
         # Get all .mp4 files in resources directory
         mp4_files = glob.glob("./resources/*.mp4")
@@ -174,6 +197,25 @@ class RaspberryPiCameraApp:
                                 command=self.capture_still)
         self.still_btn.pack(pady=10)
         
+        # Detection type Selection dropdown
+        detection_frame = tk.Frame(control_inner, bg="#f0f0f0")
+        detection_frame.pack(pady=10)
+        
+        detection_label = tk.Label(detection_frame, text="Detection Type:", 
+                             font=("Arial", 10), bg="#f0f0f0")
+        detection_label.pack(side=tk.LEFT, padx=5)
+        
+        # Create a StringVar and populate the dropdown
+        self.detection_var = tk.StringVar()
+        detection_names = [name for name, path in self.detection_files]
+        if detection_names:
+            self.detection_var.set(detection_names[0])
+        
+        detection_menu = tk.OptionMenu(detection_frame, self.detection_var, *detection_names, 
+                                 command=self.on_detection_selected)
+        detection_menu.config(width=25)
+        detection_menu.pack(side=tk.LEFT)
+        
         # Model Selection dropdown
         model_frame = tk.Frame(control_inner, bg="#f0f0f0")
         model_frame.pack(pady=10)
@@ -190,7 +232,7 @@ class RaspberryPiCameraApp:
         
         model_menu = tk.OptionMenu(model_frame, self.model_var, *model_names, 
                                  command=self.on_model_selected)
-        model_menu.config(width=15)
+        model_menu.config(width=25)
         model_menu.pack(side=tk.LEFT)
         
         # Label Selection dropdown
@@ -209,7 +251,7 @@ class RaspberryPiCameraApp:
         
         label_menu = tk.OptionMenu(label_frame, self.label_var, *label_names, 
                                  command=self.on_label_selected)
-        label_menu.config(width=15)
+        label_menu.config(width=25)
         label_menu.pack(side=tk.LEFT)
         
         # Input Selection dropdown
@@ -228,7 +270,7 @@ class RaspberryPiCameraApp:
         
         input_menu = tk.OptionMenu(input_frame, self.input_var, *input_names, 
                                  command=self.on_input_selected)
-        input_menu.config(width=15)
+        input_menu.config(width=25)
         input_menu.pack(side=tk.LEFT)
         
         # Exit Button
@@ -272,13 +314,21 @@ class RaspberryPiCameraApp:
         for shortcut in shortcuts:
             tk.Label(help_frame, text=shortcut, font=("Arial", 9), 
                    bg="#f0f0f0", anchor="w").pack(fill=tk.X, padx=5, pady=1)
-    
+            
+    def on_detection_selected(self, selection):
+        """Handle detection type selection from dropdown"""
+        for name, path in self.detection_files:
+            if name == selection:
+                self.selected_detection = path
+                break
+            
     def on_model_selected(self, selection):
         """Handle model selection from dropdown"""
         for name, path in self.model_files:
             if name == selection:
                 self.selected_model = path
                 break
+            
     def on_label_selected(self, selection):
         """Handle label selection from dropdown"""
         for name, path in self.label_files:
@@ -470,10 +520,11 @@ class RaspberryPiCameraApp:
             try:
                 cmd = [
                     "python", 
-                    "./basic_pipelines/filtered_detection.py", 
-                    "--input", "rpi", #self.selected_input, 
+                    self.selected_detection,  
+                    "--input", self.selected_input,
                     "--hef", self.selected_model,
                     "--labels-json", self.selected_label,
+                    "--show-fps",
                 ]
                 
                 # Print the command
@@ -529,11 +580,34 @@ class RaspberryPiCameraApp:
     
     def toggle_recording(self):
         """Toggle recording on/off"""
-        if not self.detection_running[0]:
-            # Update UI
-            self.start_stop_btn.config(text="Stop Detection")
-            self.status_label.config(text="Status: Starting detection...")
+        if self.detection_running[0]:
+            try:
+                self.detection_process.terminate()
+                self.detection_running[0] = False
+                # Wait for process to terminate
+                timeout = 5
+                for _ in range(timeout * 10):
+                    if self.detection_process.poll() is not None:
+                        break
+                    time.sleep(0.1)
+                
+                # If still running, kill it
+                if self.detection_process.poll() is None:
+                    self.detection_process.kill()
+                    time.sleep(0.5)
+
             
+                 # Wait a moment to ensure camera is released
+                time.sleep(1)
+                self.detection_process = None
+            except Exception as e:
+                print(f"Error terminating detection process: {str(e)}")
+                
+        if not self.recording[0]:
+            # Update UI
+            self.record_btn.config(text="Stop Recording")
+            self.status_label.config(text="Status: Starting recording...")
+            self.start_stop_btn.config(text="Start Detection")
             # Stop the camera
             self.stop_camera()
             
@@ -559,7 +633,7 @@ class RaspberryPiCameraApp:
                     "python",
                     #"./basic_pipelines/Detection_cap.py",
                     "./basic_pipelines/recording_logging.py", 
-                    "--input", "rpi", #self.selected_input, 
+                    "--input", self.selected_input,
                     "--hef", self.selected_model,
                     "--labels-json", self.selected_label,
                 ]
@@ -572,12 +646,12 @@ class RaspberryPiCameraApp:
                 time.sleep(1)
                 
                 # Start the detection process
-                self.detection_process = subprocess.Popen(cmd)
+                self.recording_process = subprocess.Popen(cmd)
                 
                 # Check if process started successfully
-                if self.detection_process.poll() is None:
-                    self.detection_running[0] = True
-                    self.status_label.config(text="Status: Detection running")
+                if self.recording_process.poll() is None:
+                    self.recording[0] = True
+                    self.status_label.config(text="Status: Recording")
                 else:
                     self.status_label.config(text="Status: Process failed to start")
                     # Restart camera
@@ -588,30 +662,64 @@ class RaspberryPiCameraApp:
                 self.start_camera()
         else:
             # Stop detection process
-            if self.detection_process is not None:
+            if self.recording_process is not None:
                 try:
-                    self.detection_process.terminate()
+                    self.recording_process.terminate()
                     # Wait for process to terminate
                     timeout = 5
                     for _ in range(timeout * 10):
-                        if self.detection_process.poll() is not None:
+                        if self.recording_process.poll() is not None:
                             break
                         time.sleep(0.1)
                     
                     # If still running, kill it
-                    if self.detection_process.poll() is None:
-                        self.detection_process.kill()
+                    if self.recording_process.poll() is None:
+                        self.recording_process.kill()
                         time.sleep(0.5)
+                        
+                    cmd2 = [
+                        "python",
+                        "pictovid.py",
+                    ]
                     
-                    self.detection_process = None
+                    # Print the command
+                    cmd_str2 = " ".join(cmd2)
+                    print(f"Writing Recording to Video")
+                    subprocess.run(["python", "pictovid.py"])
+                    
+                    self.recording_process = None
                 except Exception as e:
                     print(f"Error terminating detection process: {str(e)}")
-            
+                # Start the detection process
+                 # Start the detection process
+                try:
+                    cmd = [
+                        "python", 
+                        self.selected_detection,  
+                        "--input", self.selected_input,
+                        "--hef", self.selected_model,
+                        "--labels-json", self.selected_label,
+                        "--show-fps",
+                    ]
+                    
+                    # Print the command
+                    cmd_str = " ".join(cmd)
+                    print(f"Executing: {cmd_str}")
+                    
+                    # Wait a moment to ensure camera is released
+                    time.sleep(1)
+                    
+                    # Start the detection process
+                    self.detection_process = subprocess.Popen(cmd)   
+                except Exception as e:
+                    print(f"Error terminating detection process: {str(e)}")
             # Update UI
-            self.start_stop_btn.config(text="Start Detection")
+            self.record_btn.config(text="Record")
             self.detection_running[0] = False
-            self.status_label.config(text="Status: Detection stopped")
-            
+            self.status_label.config(text="Status: Recording stopped")
+            self.start_stop_btn.config(text="Stop Detection")
+            self.detection_running[0] = True
+            self.status_label.config(text="Status: Detection running")
             # Restart camera
             self.start_camera()
 #         """Toggle video recording"""
