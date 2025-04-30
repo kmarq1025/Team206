@@ -1,0 +1,4 @@
+cd hailo-rpi5-examples # enters the directory containing the files 
+source setup_env.sh # enters the virtual environment where all the dependencies are installed 
+python basic_pipelines/detection.py # runs an example video with the model detecting objects in the video
+python basic_pipelines/detection.py --input rpi # runs the model using the pi camera as the input rather than a video
