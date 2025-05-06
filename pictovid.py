@@ -18,13 +18,19 @@ def create_video_from_images(image_folder, output_video, frame_rate):
         video_writer.write(frame)
 
     video_writer.release()
+    for image_name in images:
+        image_path = os.path.join(image_folder, image_name)
+        os.remove(image_path)
 
     print("videosaved as {output_video}")
 
 if __name__ == "__main__":
 
-    image_folder = "captures"
-    output_video = "output.mp4"
+    image_folder = "frames"
+    output_video = "scan recording.mp4"
     frame_rate = 30
 
     create_video_from_images(image_folder, output_video, frame_rate)
+
+
+    

@@ -65,8 +65,10 @@ def app_callback(pad, info, user_data):
             int(bbox.xmax() * width), int(bbox.ymax() * height)
         )
         
-        if label in ["Access Panel", "Bolt", "Cover Bolt", "Filter Mount Bolt", "Manifold Bolt", "Power Pack", "Rail Cover"]:
-            roi.remove_object(detection)
+        if label in ["Missing Access Panel", "Missing Bolt",
+                     "Missing Bracket", "Missing Nut", "Missing Power Pack", "Missing Power Pack Head",
+                     "Missing Rail Cover"]:
+            #roi.remove_object(detection)
             string_to_print += f"Frame: frame2_{frame_count:04d}.jpg -- Label: {label} -- Confidence: {confidence:.2f}\n"
             detection_count += 1
             
