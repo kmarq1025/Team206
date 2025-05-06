@@ -239,7 +239,7 @@ def OVERLAY_PIPELINE(name='hailo_overlay'):
 
     return overlay_pipeline
 
-def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', name='hailo_display'):
+def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='true', name='hailo_display'):
     """
     Creates a GStreamer pipeline string for displaying the video.
     It includes the hailooverlay plugin to draw bounding boxes and labels on the video.
@@ -254,7 +254,7 @@ def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', 
         str: A string representing the GStreamer pipeline for displaying the video.
     """
     # Construct the display pipeline string
-    screen_width, screen_height =pyautogui.size()
+    screen_width, screen_height =pyautogui.size()#-----------------------------------------------------------------------------------------------------------------
      
     
     window_width = int(screen_width * 8//10)
@@ -265,7 +265,7 @@ def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', 
         f'{QUEUE(name=f"{name}_videoscale_q")} ! '
         f'videoscale ! '
         f'videocrop top=0 bottom=0 left=0 right=0 ! '
-        # f'video/x-raw, width=1520, height=1050, pixel-aspect-ratio=1/1 ! '
+        #f'video/x-raw, width=1520, height=1050, pixel-aspect-ratio=1/1 ! '
         f'video/x-raw, width={window_width}, height={window_height}, pixel-aspect-ratio=1/1 ! '
         f'{QUEUE(name=f"{name}_videoconvert_q")} ! '
         f'videoconvert name={name}_videoconvert n-threads=2 qos=false ! '

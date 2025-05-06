@@ -88,7 +88,7 @@ class GStreamerDetectionApp(GStreamerApp):
         )
 
         # Set the process title
-        setproctitle.setproctitle("Diesel Enginator 9000v11")
+        setproctitle.setproctitle("Automated Recognition and Monitoring for Anomaly Detection and Assessment (ARMADA) System")
         
         self.create_pipeline()
 
@@ -102,7 +102,8 @@ class GStreamerDetectionApp(GStreamerApp):
             config_json=self.labels_json,
             additional_params=self.thresholds_str)
         detection_pipeline_wrapper = INFERENCE_PIPELINE_WRAPPER(detection_pipeline)
-        tracker_pipeline = TRACKER_PIPELINE(class_id=1)
+        tracker_pipeline = TRACKER_PIPELINE(class_id=-1)
+        #tracker_pipeline = TRACKER_PIPELINE(class_id=0)
         user_callback_pipeline = USER_CALLBACK_PIPELINE()
         display_pipeline = DISPLAY_PIPELINE(video_sink=self.video_sink, sync=self.sync, show_fps=self.show_fps)#-----------------------
         #file_sink_pipeline = FILE_SINK_PIPELINE(output_file = 'test_output.mkv')#-----------------------------

@@ -11,7 +11,7 @@ import time
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib, GObject
 from hailo_apps_infra.gstreamer_helper_pipelines import get_source_type
-
+import pyautogui
 try:
     from picamera2 import Picamera2
 except ImportError:
@@ -94,9 +94,16 @@ class GStreamerApp:
         self.pipeline_latency = 300  # milliseconds
 
         # Set Hailo parameters; these parameters should be set based on the model used
+        #screen_width, screen_height =pyautogui.size()#-----------------------------------------------------------------------------------------------------------------
+     
+    
+        #window_width = int(screen_width * 8//10)
+        #window_height = int(screen_height - 80)
         self.batch_size = 1
-        self.video_width = 1280
-        self.video_height = 720
+        #self.video_width = {window_width}
+        #self.video_height = {window_height}
+        self.video_width = 640
+        self.video_height = 480
         self.video_format = "RGB"
         self.hef_path = None
         self.app_callback = None
